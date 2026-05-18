@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LenDenClub P2P — Exact Rolling Simulator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --ink:#0a0c0f;--paper:#f0ede8;--line:#d4cfc8;--line2:#e8e4df;
+  --blue:#1a56ff;--green:#0d8a4e;--red:#c0392b;--amber:#b8860b;
+  --teal:#0e7490;--purple:#5b21b6;--text:#1a1a1a;--muted:#6b6560;--dim:#a09b94;
+}
+body{background:var(--paper);color:var(--text);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding-bottom:80px}
+
+/* HEADER */
+.hdr{background:var(--ink);padding:20px 18px 16px;position:relative;overflow:hidden}
+.h-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:4px;padding:3px 8px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:rgba(255,255,255,.5);letter-spacing:1px;margin-bottom:10px}
+.h-title{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:#fff;letter-spacing:-1px;line-height:1.1}
+.h-title span{color:#4dffb4}
+.h-row{display:flex;gap:20px;margin-top:16px}
+.h-stat{flex:1}
+.h-stat label{font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:4px}
+.h-stat .hv{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:#fff}
+.h-stat .hv.green{color:#4dffb4}
+.h-stat .hv.amber{color:#ffd54f}
+
+/* RULE CARD */
+.rule-banner{background:#1a56ff;padding:12px 18px;display:flex;gap:10px;align-items:flex-start}
+.rb-icon{font-size:16px;margin-top:1px;flex-shrink:0}
+.rb-text{font-size:11px;color:#fff;line-height:1.6;opacity:.9}
+
+/* NAV */
+.nav{display:flex;background:#fff;border-bottom:2px solid var(--ink);position:sticky;top:0;z-index:100}
+.nb{flex:1;padding:11px 2px 9px;border:none;background:none;color:var(--muted);font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;font-weight:600;position:relative;}
+.nb.on{color:var(--ink)}
+.nb.on::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--ink)}
+
+/* PANES */
+.pane{display:none;padding:14px 16px}
+.pane.on{display:block}
+.sec-label{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--line)}
+
+/* GRID STATS */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:14px}
+.sbox{background:var(--paper);padding:13px}
+.sbox label{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;display:block;margin-bottom:5px}
+.sbox .sv{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700;line-height:1}
+.sbox .ss{font-size:10px;color:var(--muted);margin-top:4px}
+
+/* SNOWBALL */
+.snowball-card{background:#fff;border:1px solid var(--line);margin-bottom:14px}
+.sc-head{background:var(--ink);padding:11px 14px;display:flex;justify-content:space-between;align-items:center}
+.sc-head .sct{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:#fff}
+.sc-head .scs{font-family:'IBM Plex Mono',monospace;font-size:9px;color:rgba(255,255,255,.5)}
+.sc-row{display:flex;padding:10px 14px;border-bottom:1px solid var(--line2);align-items:center;gap:10px}
+.sc-row:last-child{border:none}
+.sc-month{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);width:70px;flex-shrink:0}
+.sc-bar-wrap{flex:1;position:relative}
+.sc-bar{height:20px;background:var(--line2);border-radius:2px;overflow:hidden;position:relative}
+.sc-bar-fill{height:100%;background:var(--ink);border-radius:2px;transition:width .6s ease}
+.sc-bar-fill.sip{background:linear-gradient(90deg,var(--ink),#1a56ff)}
+.sc-val{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:var(--ink);position:absolute;right:8px;top:50%;transform:translateY(-50%)}
+.sc-sub{font-size:9px;color:var(--dim);margin-top:2px}
+
+/* MILESTONE */
+.mile-row{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:14px}
+.mile-box{background:var(--paper);padding:12px}
+.mile-box label{font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:4px}
+.mile-box .mv{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700}
+.mile-box .ms{font-size:10px;color:var(--muted);margin-top:3px}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;overflow-y:auto;max-height:560px;border:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:10.5px;min-width:620px}
+th{background:var(--ink);color:rgba(255,255,255,.8);padding:9px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;position:sticky;top:0;z-index:10}
+th:first-child{text-align:left;padding-left:12px}
+td{padding:8px 8px;border-bottom:1px solid var(--line2);text-align:right;font-family:'IBM Plex Mono',monospace}
+td:first-child{text-align:left;padding-left:12px;font-family:'IBM Plex Sans',sans-serif;font-weight:500}
+.td-emi{color:var(--blue);font-weight:600}
+.td-prin{color:var(--teal)}
+.td-int{color:var(--green);font-weight:600}
+.td-npa{color:var(--red)}
+.td-inv{color:var(--purple)}
+.td-port{color:var(--ink);font-weight:700}
+tr.tr-yr{background:#f0f4ff}
+tr.tr-alt{background:#faf9f7}
+
+/* SETTINGS */
+.sf{margin-bottom:14px}
+.sf label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;display:flex;justify-content:space-between;margin-bottom:6px}
+.sf label span{color:var(--ink);font-weight:700}
+.finput{width:100%;padding:10px 12px;background:#fff;border:1px solid var(--line);font-size:14px;font-family:'IBM Plex Mono',monospace;outline:none}
+.fslider{width:100%;-webkit-appearance:none;height:3px;background:var(--line);outline:none;margin-top:8px;accent-color:var(--ink)}
+.trow{display:flex;border:1px solid var(--line);margin-bottom:14px}
+.tbtn{flex:1;padding:9px 4px;border:none;border-right:1px solid var(--line);background:#fff;font-family:'IBM Plex Mono',monospace;cursor:pointer;font-weight:600}
+.tbtn:last-child{border-right:none}
+.tbtn.on{background:var(--ink);color:#fff}
+
+.info-box{background:#fff;border-left:3px solid var(--blue);padding:12px 14px;margin-bottom:14px}
+.info-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line2)}
+.info-row:last-child{border:none}
+.chart-wrap{height:200px;position:relative}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="h-chip">⟳ EXACT LOGISTIC SIMULATION</div>
+  <div class="h-title">LenDenClub<br><span>P2P Fixed Compounder</span></div>
+  <div class="h-row">
+    <div class="h-stat"><label>Per Unit (250)</label><div class="hv green" id="hUnit">—</div></div>
+    <div class="h-stat"><label>Net Monthly</label><div class="hv amber" id="hNet">3%</div></div>
+    <div class="h-stat"><label>Batch NPA</label><div class="hv" style="color:#ff6b6b" id="hNpa">4%</div></div>
+  </div>
+</div>
+
+<div class="rule-banner">
+  <div class="rb-icon">📐</div>
+  <div class="rb-text"><strong>Fixed Real Lifecycle:</strong> This month's new SIP/Reinvestment initiates active pool. Payout cycle triggers strictly from the <strong>following month</strong>.</div>
+</div>
+
+<div class="nav">
+  <button class="nb on" onclick="tab('dash',this)">OVERVIEW</button>
+  <button class="nb" onclick="tab('sim',this)">LEDGER VIEW</button>
+  <button class="nb" onclick="tab('chart',this)">CHARTS</button>
+  <button class="nb" onclick="tab('setup',this)">SETUP</button>
+</div>
+
+<div id="pane-dash" class="pane on">
+  <div class="sec-label">Portfolio Snapshot</div>
+  <div class="stat-grid">
+    <div class="sbox"><label>Initial Principal</label><div class="sv" id="dInv">—</div><div class="ss" id="dTickets">0 tickets</div></div>
+    <div class="sbox"><label>Monthly SIP</label><div class="sv" id="dSipAmt" style="color:var(--blue)">—</div><div class="ss">added every month</div></div>
+    <div class="sbox"><label>Total Capital Invested</label><div class="sv" id="dTotalInvested" style="color:var(--purple)">—</div><div class="ss">net principal put in</div></div>
+    <div class="sbox"><label>Final Portfolio Value</label><div class="sv" id="dActive" style="color:var(--green)">—</div><div class="ss">outstanding + cash balance</div></div>
+  </div>
+
+  <div class="sec-label">EMI Snowball Effect</div>
+  <div class="snowball-card"><div id="snowRows"></div></div>
+
+  <div class="sec-label">Milestones</div>
+  <div class="mile-row">
+    <div class="mile-box"><label>6 Months</label><div class="mv" id="m6" style="color:var(--blue)">—</div><div class="ms" id="m6i">—</div></div>
+    <div class="mile-box"><label>1 Year</label><div class="mv" id="m12" style="color:var(--green)">—</div><div class="ms" id="m12i">—</div></div>
+    <div class="mile-box"><label>2 Years</label><div class="mv" id="m24" style="color:var(--purple)">—</div><div class="ms" id="m24i">—</div></div>
+    <div class="mile-box"><label>5 Years</label><div class="mv" id="m60" style="color:var(--amber)">—</div><div class="ms" id="m60i">—</div></div>
+  </div>
+</div>
+
+<div id="pane-sim" class="pane">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th>SIP Added</th>
+          <th>EMI Rcvd</th>
+          <th>Principal</th>
+          <th>Net Interest</th>
+          <th>NPA Loss</th>
+          <th>Reinvested</th>
+          <th>Wallet Cash</th>
+          <th>Total Portfolio</th>
+        </tr>
+      </thead>
+      <tbody id="simTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="pane-chart" class="pane">
+  <div class="info-box"><div class="info-row">📊 Charts tab is loaded. View detailed asset curve tracking in Ledger View.</div></div>
+  <div class="chart-wrap"><canvas id="portChart"></canvas></div>
+</div>
+
+<div id="pane-setup" class="pane">
+  <div class="sf">
+    <label>Initial Capital (₹)</label>
+    <input class="finput" type="number" id="sP" value="0" oninput="go()"/>
+  </div>
+  <div class="sf">
+    <label>Monthly SIP Amount (₹)</label>
+    <input class="finput" type="number" id="sSip" value="10000" oninput="go()"/>
+  </div>
+  <div class="sf">
+    <label>Expected Annual Interest Rate (p.a. %)</label>
+    <input class="finput" type="number" id="sI" value="44" oninput="go()"/>
+  </div>
+  <div class="sf">
+    <label>Expected Annual NPA Rate (%)</label>
+    <input class="finput" type="number" id="sN" value="4" oninput="go()"/>
+  </div>
+  <div class="sf">
+    <label>Loan Horizon</label>
+    <div class="trow" id="horizonBlock">
+      <button class="tbtn" onclick="setHz(1,this)">1 Year</button>
+      <button class="tbtn on" onclick="setHz(5,this)">5 Years</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let tenure = 3; 
+let simYears = 5;
+let portC = null;
+
+const fmtF = n => '₹' + Math.round(n).toLocaleString('en-IN');
+const fmt = n => {
+  n = Math.round(n);
+  if(n >= 100000) return '₹' + (n/100000).toFixed(2) + 'L';
+  return '₹' + n.toLocaleString('en-IN');
+};
+
+function tab(id, btn) {
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('pane-' + id).classList.add('on');
+  if(id === 'chart' && portC) { setTimeout(() => portC.resize(), 50); }
+}
+
+function setHz(yrs, btn) {
+  simYears = yrs;
+  document.querySelectorAll('#horizonBlock .tbtn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  go();
+}
+
+function mkBatch(amt, npaRate) {
+  const tickets = Math.floor(amt / 250);
+  if(tickets === 0) return { active: 0, npaLoss: 0, invested: 0 };
+  const npaT = Math.round(tickets * npaRate);
+  const activeT = tickets - npaT;
+  return {
+    active: activeT * 250,
+    npaLoss: npaT * 250,
+    invested: tickets * 250
+  };
+}
+
+function go() {
+  const P = +document.getElementById('sP').value || 0;
+  const sip = +document.getElementById('sSip').value || 0;
+  const annualInt = +document.getElementById('sI').value || 44;
+  const annualNpa = +document.getElementById('sN').value || 4;
+
+  const mNpaRate = (annualNpa / 100) / 12;
+  const monthlyNpaFactor = annualNpa / 100; // Batch level hit
+  const monthlyPrinRate = 1 / tenure; 
+  const monthlyNetIntRate = ((annualInt / 100) / 12) - 0.00333333;
+
+  // Header display calculations
+  const sample = mkBatch(250, monthlyNpaFactor);
+  const sampleEmi = (sample.active / tenure) + (sample.active * monthlyNetIntRate);
+  document.getElementById('hUnit').textContent = '₹' + sampleEmi.toFixed(2) + '/mo';
+  document.getElementById('hNet').textContent = ((annualInt/12)).toFixed(1) + '%';
+  document.getElementById('hNpa').textContent = annualNpa + '%';
+
+  let wallet = 0;
+  let activeLoans = []; // Structure: [{ activeAmt: X, rem: 3 }]
+  let totalInvested = P;
+
+  // Month 0 Processing
+  if(P >= 250) {
+    const b0 = mkBatch(P, monthlyNpaFactor);
+    if(b0.active > 0) activeLoans.push({ activeAmt: b0.active, rem: tenure });
+    wallet = P - b0.invested;
+  } else {
+    wallet = P;
+  }
+
+  const totalMonths = simYears * 12;
+  const rows = [];
+
+  // Base state tracking row row push
+  rows.push({ m: 0, sip: 0, emi: 0, prin: 0, int: 0, npa: 0, reinv: P - wallet, wallet: wallet, port: P });
+
+  for(let m = 1; m <= totalMonths; m++) {
+    let recPrincipal = 0;
+    let recInterest = 0;
+    let nextLoans = [];
+
+    // 1. Collect EMI from historical running active blocks
+    for(let loan of activeLoans) {
+      recPrincipal += loan.activeAmt * monthlyPrinRate;
+      recInterest += loan.activeAmt * monthlyNetIntRate;
+      if(loan.rem > 1) {
+        nextLoans.push({ activeAmt: loan.activeAmt, rem: loan.rem - 1 });
+      }
+    }
+
+    let totalEmiReceived = recPrincipal + recInterest;
+    
+    // 2. Add SIP strictly at runtime layer
+    wallet += totalEmiReceived + sip;
+    totalInvested += sip;
+
+    // 3. Deploy wallet cash in chunks of ₹250 Multiples
+    let batchLoss = 0;
+    let reinvestedThisMonth = 0;
+    if(wallet >= 250) {
+      const bM = mkBatch(wallet, monthlyNpaFactor);
+      batchLoss = bM.npaLoss;
+      reinvestedThisMonth = bM.invested;
+      if(bM.active > 0) {
+        nextLoans.push({ activeAmt: bM.active, rem: tenure });
+      }
+      wallet = wallet - reinvestedThisMonth;
+    }
+
+    activeLoans = nextLoans;
+
+    // Calculate outstanding net asset balance sheet
+    let outstandingAssetValue = 0;
+    for(let loan of activeLoans) {
+      outstandingAssetValue += (loan.activeAmt * monthlyPrinRate) * loan.rem;
+    }
+    let currentTotalPortfolioValue = outstandingAssetValue + wallet;
+
+    rows.push({
+      m: m, sip: sip, emi: totalEmiReceived, prin: recPrincipal, int: recInterest,
+      npa: batchLoss, reinv: reinvestedThisMonth, wallet: wallet, port: currentTotalPortfolioValue
+    });
+  }
+
+  // Render Table Engine
+  const tbody = document.getElementById('simTbody');
+  tbody.innerHTML = '';
+  rows.forEach(r => {
+    let tr = document.createElement('tr');
+    if(r.m > 0 && r.m % 12 === 0) tr.className = 'tr-yr';
+    tr.innerHTML = `
+      <td>${r.m === 0 ? 'Start' : 'Month ' + r.m}</td>
+      <td style="color:var(--purple)">${r.m === 0 ? '—' : fmtF(r.sip)}</td>
+      <td class="td-emi">${r.m === 0 ? '—' : fmtF(r.emi)}</td>
+      <td class="td-prin">${r.m === 0 ? '—' : fmtF(r.prin)}</td>
+      <td class="td-int">${r.m === 0 ? '—' : '+' + fmtF(r.int)}</td>
+      <td class="td-npa">${r.npa > 0 ? '−' + fmtF(r.npa) : '—'}</td>
+      <td style="color:var(--ink); font-weight:500">${r.reinv > 0 ? fmtF(r.reinv) : '—'}</td>
+      <td>${fmtF(r.wallet)}</td>
+      <td class="td-port">${fmtF(r.port)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Dashboard Update Sync
+  const lastR = rows[rows.length - 1];
+  const firstM = rows[1];
+  document.getElementById('dInv').textContent = fmtF(P);
+  document.getElementById('dTickets').textContent = Math.floor(P/250) + ' tickets';
+  document.getElementById('dSipAmt').textContent = sip > 0 ? fmtF(sip) + '/mo' : 'No SIP';
+  document.getElementById('dTotalInvested').textContent = fmtF(totalInvested);
+  document.getElementById('dActive').textContent = fmtF(lastR.port);
+
+  // Milestones Engine Setup
+  [[6,'m6','m6i'],[12,'m12','m12i'],[24,'m24','m24i'],[60,'m60','m60i']].forEach(([m, id, subId]) => {
+    const targetRow = rows[m] || lastR;
+    document.getElementById(id).textContent = fmt(targetRow.port);
+    let netGain = targetRow.port - ((m * sip) + P);
+    document.getElementById(subId).textContent = 'Net Gain: ' + fmtF(netGain);
+  });
+
+  // Snowball Box Component Sync
+  const snowEl = document.getElementById('snowRows');
+  snowEl.innerHTML = '';
+  const maxEmi = rows[Math.min(12, rows.length - 1)].emi || 1;
+  [1, 3, 6, 12].forEach(m => {
+    const row = rows[m] || lastR;
+    const pct = Math.min(100, (row.emi / maxEmi) * 100);
+    const div = document.createElement('div');
+    div.className = 'sc-row';
+    div.innerHTML = `
+      <div class="sc-month">Month ${m}</div>
+      <div class="sc-bar-wrap">
+        <div class="sc-bar">
+          <div class="sc-bar-fill sip" style="width:${pct}%"></div>
+          <div class="sc-val">${fmtF(row.emi)}</div>
+        </div>
+      </div>`;
+    snowEl.appendChild(div);
+  });
+
+  // Update Charts Layer Data Stream
+  updateChartData(rows.map(x => 'M' + x.m), rows.map(x => x.port));
+}
+
+function updateChartData(labels, dataPoints) {
+  const ctx = document.getElementById('portChart').getContext('2d');
+  if(portC) {
+    portC.data.labels = labels;
+    portC.data.datasets[0].data = dataPoints;
+    portC.update();
+    return;
+  }
+  portC = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{ label: 'Portfolio Growth', data: dataPoints, borderColor: '#1a56ff', borderWidth: 2, fill: false, pointRadius: 1 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+}
+
+go();
+</script>
+</body>
+</html>
