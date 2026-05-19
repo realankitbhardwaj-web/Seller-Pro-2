@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LendenClub P2P — Customizable Date Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --ink:#0a0c0f;--paper:#f0ede8;--line:#d4cfc8;--line2:#e8e4df;
+  --blue:#1a56ff;--green:#0d8a4e;--red:#c0392b;--amber:#b8860b;
+  --teal:#0e7490;--purple:#5b21b6;--text:#1a1a1a;--muted:#6b6560;--dim:#a09b94;
+}
+body{background:var(--paper);color:var(--text);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;max-width:480px;margin:0 auto;padding-bottom:60px}
+.hdr{background:var(--ink);padding:20px 18px 16px;position:relative}
+.h-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:4px;padding:3px 8px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:rgba(255,255,255,.5);letter-spacing:1px;margin-bottom:10px}
+.h-title{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:#fff;letter-spacing:-1px;line-height:1.1}
+.h-title span{color:#4dffb4}
+.h-row{display:flex;gap:20px;margin-top:16px}
+.h-stat{flex:1}
+.h-stat label{font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:4px}
+.h-stat .hv{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:#fff}
+.h-stat .hv.green{color:#4dffb4}
+.h-stat .hv.amber{color:#ffd54f}
+.rule-banner{background:#1a56ff;padding:12px 18px;display:flex;gap:10px;align-items:flex-start}
+.nav{display:flex;background:#fff;border-bottom:2px solid var(--ink);position:sticky;top:0;z-index:100}
+.nb{flex:1;padding:12px 2px;border:none;background:none;color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;font-weight:600;position:relative;letter-spacing:.5px;text-transform:uppercase}
+.nb.on{color:var(--ink)}
+.nb.on::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--ink)}
+.pane{display:none;padding:14px 16px}
+.pane.on{display:block}
+.sec-label{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--line)}
+.inspector-card{background:var(--ink);padding:18px;border-radius:0px;margin-bottom:16px;color:#fff}
+.ins-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px 15px;margin-bottom:18px}
+.ins-box label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:rgba(255,255,255,0.4);text-transform:uppercase;display:block;margin-bottom:4px;letter-spacing:1px}
+.ins-box .iv{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;line-height:1.2;color:#fff}
+.ins-box .iv.green{color:#4dffb4}
+.ins-box .iv.amber{color:#ffd54f}
+.ins-control-box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:14px;border-radius:4px}
+.ins-ctrl-label{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:8px}
+.ins-ctrl-label .timeline-val{color:#4dffb4;font-weight:700;margin-left:auto}
+.ins-range{width:100%;-webkit-appearance:none;height:4px;background:rgba(255,255,255,0.2);outline:none;accent-color:#4dffb4;border-radius:2px}
+.ins-range-meta{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:rgba(255,255,255,0.3);margin-top:6px}
+.logic-card{background:#fff;border:1px solid var(--line);padding:12px;margin-bottom:14px}
+.logic-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;color:var(--blue);letter-spacing:1px;margin-bottom:10px;text-transform:uppercase}
+.logic-row{display:flex;justify-content:space-between;padding:6px 0;font-size:11px;border-bottom:1px dashed var(--line2)}
+.logic-row:last-child{border-bottom:none}
+.logic-row label{color:var(--muted);font-family:'IBM Plex Sans',sans-serif}
+.logic-row span{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--ink)}
+/* ── Custom date picker ── */
+.date-wrap{margin-bottom:16px}
+.date-wrap > label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:2px}
+.month-input{width:100%;padding:12px 14px;background:#fff;border:2px solid var(--ink);color:var(--text);font-size:16px;font-family:'IBM Plex Mono',monospace;outline:none;border-radius:0;cursor:pointer}
+.month-input:focus{border-color:var(--blue)}
+/* ── Table scroll container ── */
+.tbl-outer{position:relative;margin-bottom:4px}
+.tbl-outer::after{
+  content:'';position:absolute;top:0;right:0;bottom:16px;width:48px;
+  background:linear-gradient(to right,transparent,rgba(255,255,255,.95));
+  pointer-events:none;transition:opacity .25s;z-index:5;border-right:1px solid var(--line)
+}
+.tbl-outer.scrolled-end::after{opacity:0}
+/* scroll progress bar */
+.scroll-bar-wrap{height:3px;background:var(--line2);margin-bottom:12px;overflow:hidden}
+.scroll-bar-fill{height:100%;background:var(--ink);width:0%;transition:width .1s;border-radius:2px}
+/* columns hint pill */
+.col-hint{display:inline-flex;align-items:center;gap:5px;background:var(--ink);color:#fff;
+  font-family:'IBM Plex Mono',monospace;font-size:9px;padding:4px 10px;border-radius:20px;
+  margin-bottom:8px;letter-spacing:.5px}
+.col-hint span{color:#4dffb4}
+.tbl-wrap{overflow-x:auto !important;overflow-y:auto;max-height:620px;border:1px solid var(--line);background:#fff;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:11px;min-width:750px !important}
+th{background:var(--ink);color:rgba(255,255,255,.8);padding:10px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9.5px;position:sticky;top:0;z-index:10;white-space:nowrap}
+th:first-child{text-align:left;padding-left:12px;position:sticky;left:0;background:var(--ink);z-index:11}
+td{padding:10px 8px;border-bottom:1px solid var(--line2);text-align:right;font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+td:first-child{text-align:left;padding-left:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:var(--text);position:sticky;left:0;background:#fff;border-right:2px solid var(--line);z-index:2;white-space:nowrap;min-width:96px}
+.td-emi{color:var(--blue);font-weight:600}
+.td-prin{color:var(--teal)}
+.td-int{color:var(--green);font-weight:600}
+.td-npa{color:var(--red)}
+.td-inv{color:var(--purple)}
+.td-buf{color:var(--dim)}
+.td-port{color:var(--ink);font-weight:700;background:rgba(0,0,0,0.02)}
+.sf{margin-bottom:14px}
+.sf label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);display:flex;justify-content:space-between;margin-bottom:6px;text-transform:uppercase}
+.sf label span{color:var(--ink);font-weight:700}
+.finput{width:100%;padding:10px 12px;background:#fff;border:1px solid var(--line);color:var(--text);font-size:14px;font-family:'IBM Plex Mono',monospace;outline:none}
+.fslider{width:100%;-webkit-appearance:none;height:3px;background:var(--line);outline:none;margin-top:8px;accent-color:var(--ink)}
+.trow{display:flex;border:1px solid var(--line)}
+.tbtn{flex:1;padding:10px 4px;border:none;border-right:1px solid var(--line);background:#fff;color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;font-weight:600}
+.tbtn:last-child{border-right:none}
+.tbtn.on{background:var(--ink);color:#fff}
+.anim{animation:up .2s ease}
+@keyframes up{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="h-chip">⟳ ANYONE CAN USE — CUSTOM START DATE</div>
+  <div class="h-title">LendenClub<br><span>P2P Simulator</span></div>
+  <div class="h-row">
+    <div class="h-stat"><label>Per Unit (₹250)</label><div class="hv green" id="hUnit">—</div></div>
+    <div class="h-stat"><label>Net Monthly</label><div class="hv amber" id="hNet">3.0%</div></div>
+    <div class="h-stat"><label>Ticket NPA</label><div class="hv" style="color:#ff6b6b" id="hNpa">4%</div></div>
+  </div>
+</div>
+
+<div class="rule-banner">
+  <div style="font-size:11px;color:#fff;line-height:1.5"><strong>20-Year Projection (240 Months):</strong> Setup tab mein koi bhi start date choose karo — simulation 20 saal tak calculate hoga.</div>
+</div>
+
+<div class="nav">
+  <button class="nb on" onclick="tab('dash',this)">Overview</button>
+  <button class="nb" onclick="tab('sim',this)">Simulation</button>
+  <button class="nb" onclick="tab('setup',this)">Setup</button>
+</div>
+
+<!-- OVERVIEW -->
+<div id="pane-dash" class="pane on anim">
+  <div class="sec-label">LIVE MONTH INSPECTOR</div>
+  <div class="inspector-card">
+    <div class="ins-grid">
+      <div class="ins-box"><label>Total Portfolio</label><div class="iv" id="insPortfolio">—</div></div>
+      <div class="ins-box"><label>Outstanding Book</label><div class="iv" id="insOutstanding">—</div></div>
+      <div class="ins-box"><label>EMI Cash Inflow</label><div class="iv green" id="insEmi">—</div></div>
+      <div class="ins-box"><label>Cumulative Interest</label><div class="iv amber" id="insInterest">—</div></div>
+    </div>
+    <div class="ins-control-box">
+      <div class="ins-ctrl-label">
+        <span>Select Simulation Timeline:</span>
+        <span class="timeline-val" id="insTimelineLabel">Start (Month 0)</span>
+      </div>
+      <input type="range" class="ins-range" id="inspectorSlider" min="0" max="240" value="0" oninput="syncInspector(this.value)"/>
+      <div class="ins-range-meta">
+        <span id="sliderStartLabel">Start</span>
+        <span id="sliderEndLabel">Month 240</span>
+      </div>
+    </div>
+  </div>
+  <div class="sec-label">System Performance</div>
+  <div class="logic-card" style="background:var(--paper);border:none;padding:4px 0;">
+    <div class="logic-row"><label>Starting Principal</label><span id="lblStartP">—</span></div>
+    <div class="logic-row"><label>20Y SIP Compound Value</label><span id="lblSipCompound">—</span></div>
+    <div class="logic-row"><label>Max EMI Reached</label><span id="lblMaxEmi" style="color:var(--blue)">—</span></div>
+  </div>
+</div>
+
+<!-- SIMULATION TABLE -->
+<div id="pane-sim" class="pane anim">
+  <div class="logic-card">
+    <div class="logic-title">SIMULATION LOGIC (EACH MONTH)</div>
+    <div class="logic-row"><label>Principal Return</label><span style="color:var(--teal)" id="lgcTenure">Active ÷ 3 months</span></div>
+    <div class="logic-row"><label>Net Interest</label><span style="color:var(--green)" id="lgcInt">Active × 3.0%/mo</span></div>
+    <div class="logic-row"><label>NPA on Reinvest</label><span style="color:var(--red)" id="lgcNpa">4.0% tickets lost</span></div>
+    <div class="logic-row"><label>Payment Collection</label><span style="color:var(--purple)" id="lgcFreq">Monthly</span></div>
+    <div class="logic-row"><label>Reinvest Minimum</label><span style="color:var(--dim)">₹250 multiples</span></div>
+  </div>
+  <div class="col-hint">← swipe → &nbsp;<span>8 columns</span>&nbsp; (Month fixed, baaki scroll)</div>
+  <div class="scroll-bar-wrap"><div class="scroll-bar-fill" id="scrollFill"></div></div>
+  <div class="tbl-outer" id="tblOuter">
+  <div class="tbl-wrap" id="tblWrap" onscroll="onTblScroll(this)">
+    <table>
+      <thead><tr>
+        <th>Month</th>
+        <th>EMI Rcvd</th>
+        <th>Principal</th>
+        <th>Interest</th>
+        <th>NPA Loss</th>
+        <th>Reinvested</th>
+        <th>Buffer</th>
+        <th>Portfolio</th>
+      </tr></thead>
+      <tbody id="simTbody"></tbody>
+    </table>
+  </div>
+  </div><!-- tbl-outer -->
+</div>
+
+<!-- SETUP -->
+<div id="pane-setup" class="pane anim">
+  <div class="sec-label" style="margin-bottom:12px">Custom Start Date</div>
+
+  <!-- ── ONLY CHANGE: dono selects hata ke ek input[type=month] lagaya ── -->
+  <div class="date-wrap">
+    <label>START MONTH &amp; YEAR</label>
+    <input type="month" class="month-input" id="startDate" value="2026-05" onchange="go()"/>
+  </div>
+
+  <div class="sec-label" style="margin-bottom:12px">Investment Parameters</div>
+  <div class="sf">
+    <label>Starting Amount (₹) <span id="lP">₹1,00,000</span></label>
+    <input class="finput" type="number" id="sP" value="100000" min="250" step="250" oninput="sl('sP','lP','₹');go()"/>
+  </div>
+  <div class="sf">
+    <label>Monthly SIP Addition (₹) <span id="lS">₹0</span></label>
+    <input class="finput" type="number" id="sS" value="0" min="0" step="250" oninput="sl('sS','lS','₹');document.getElementById('slS').value=this.value;go()"/>
+    <input class="fslider" type="range" id="slS" min="0" max="50000" step="250" value="0" oninput="document.getElementById('sS').value=this.value;sl('sS','lS','₹');go()"/>
+  </div>
+  <div class="sf">
+    <label>Annual Net Interest % <span id="lI">36%</span></label>
+    <input class="finput" type="number" id="sI" value="36" step="1" oninput="sl('sI','lI','','%');document.getElementById('slI').value=this.value;go()"/>
+    <input class="fslider" type="range" id="slI" min="12" max="96" value="36" oninput="document.getElementById('sI').value=this.value;sl('sI','lI','','%');go()"/>
+  </div>
+  <div class="sf">
+    <label>NPA Rate % <span id="lN">4%</span></label>
+    <input class="finput" type="number" id="sN" value="4" step="0.5" oninput="sl('sN','lN','','%');go()"/>
+  </div>
+  <div class="sf">
+    <label>Loan Tenure (months) <span id="lT">3 months</span></label>
+    <input class="finput" type="number" id="sTen" value="3" min="1" max="24" step="1"
+      oninput="tenure=Math.min(24,Math.max(1,+this.value||3));document.getElementById('slTen').value=tenure;document.getElementById('lT').textContent=tenure+' month'+(tenure>1?'s':'');go()"/>
+    <input class="fslider" type="range" id="slTen" min="1" max="24" value="3"
+      oninput="tenure=+this.value;document.getElementById('sTen').value=tenure;document.getElementById('lT').textContent=tenure+' month'+(tenure>1?'s':'');go()"/>
+    <div class="ins-range-meta" style="color:var(--dim);margin-top:4px"><span>1 month</span><span>24 months</span></div>
+  </div>
+  <div class="sf">
+    <label>Payment Collection</label>
+    <div class="trow">
+      <button class="tbtn on" id="btnMonthly" onclick="setFreq('monthly',this)">Monthly</button>
+      <button class="tbtn" id="btnDaily" onclick="setFreq('daily',this)">Daily</button>
+    </div>
+    <div style="font-size:9px;color:var(--dim);font-family:'IBM Plex Mono',monospace;margin-top:6px;line-height:1.5">
+      Monthly: interest = Annual% ÷ 12 &nbsp;|&nbsp; Daily: compounded daily (slightly higher effective return)
+    </div>
+  </div>
+</div>
+
+<script>
+let tenure = 3;
+let payFreq = 'monthly'; // 'monthly' | 'daily'
+let globalRows = [];
+const TOTAL_MONTHS = 240;
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const fmtF = n => '₹' + Math.round(n).toLocaleString('en-IN');
+
+// Scroll handler — gradient + progress bar
+function onTblScroll(el) {
+  const max = el.scrollWidth - el.clientWidth;
+  const pct = max > 0 ? (el.scrollLeft / max) * 100 : 100;
+  document.getElementById('scrollFill').style.width = pct + '%';
+  document.getElementById('tblOuter').classList.toggle('scrolled-end', pct >= 98);
+}
+
+// input[type=month] value = "YYYY-MM"
+function getStartDate() {
+  const val = document.getElementById('startDate').value || '2026-05';
+  const [sy, smRaw] = val.split('-').map(Number);
+  return { sy, sm: smRaw - 1 }; // JS Date months are 0-indexed
+}
+
+function mlbl(off) {
+  if (off === 0) return 'Start';
+  const { sy, sm } = getStartDate();
+  const d = new Date(sy, sm + off, 1);
+  const mm = MONTHS[d.getMonth()];
+  const yyyy = d.getFullYear();
+  return mm + ' ' + yyyy;
+}
+
+function inp() {
+  const annualRate = Math.max(0, (+document.getElementById('sI').value || 36)) / 100;
+  // Daily: effective monthly = (1 + annualRate/365)^(365/12) - 1
+  // Monthly: annualRate / 12
+  const monthlyInt = payFreq === 'daily'
+    ? Math.pow(1 + annualRate / 365, 365 / 12) - 1
+    : annualRate / 12;
+  return {
+    P:   Math.max(250, Math.floor((+document.getElementById('sP').value || 250) / 250) * 250),
+    SIP: Math.floor((+document.getElementById('sS').value || 0) / 250) * 250,
+    INT: monthlyInt,
+    NPA: Math.max(0, (+document.getElementById('sN').value || 4)) / 100,
+    annualRate
+  };
+}
+
+function mkBatch(walletAmt, rate) {
+  const t = Math.floor(walletAmt / 250);
+  if (t === 0) return { active: 0, npaLoss: 0, invested: 0 };
+  return { active: (t - Math.round(t * rate)) * 250, npaLoss: Math.round(t * rate) * 250, invested: t * 250 };
+}
+
+function simulate(initial, sip, months, ir, nr) {
+  const b0 = mkBatch(initial, nr);
+  let wallet = initial - b0.invested;
+  let tranches = [{ active: b0.active, rem: tenure }];
+  let cumInt = 0;
+  const rows = [{
+    m: 0, lbl: 'Start', emi: 0, principal: 0, interest: 0,
+    reinvested: b0.invested, npaLoss: b0.npaLoss,
+    wallet: Math.round(wallet), cumInt: 0, portfolio: initial, outstanding: b0.active
+  }];
+
+  for (let m = 1; m <= months; m++) {
+    let mPrin = 0, mInt = 0;
+    const next = [];
+    for (const t of tranches) {
+      mPrin += t.active / tenure;
+      mInt  += t.active * ir;
+      if (t.rem > 1) next.push({ active: t.active, rem: t.rem - 1 });
+    }
+    wallet += mPrin + mInt + sip;
+    cumInt += mInt;
+    let npaThis = 0, reinv = 0;
+    const wt = Math.floor(wallet / 250);
+    if (wt >= 1) {
+      const b = mkBatch(wt * 250, nr);
+      npaThis = b.npaLoss; reinv = b.invested;
+      next.push({ active: b.active, rem: tenure });
+      wallet -= reinv;
+    }
+    tranches = next;
+    const out = tranches.reduce((s, t) => s + t.active * t.rem / tenure, 0);
+    const portfolio = Math.round(out + wallet);
+    rows.push({
+      m, lbl: mlbl(m),
+      emi: Math.round(mPrin + mInt),
+      principal: Math.round(mPrin),
+      interest: Math.round(mInt),
+      reinvested: Math.round(reinv),
+      npaLoss: Math.round(npaThis),
+      wallet: Math.round(wallet),
+      cumInt: Math.round(cumInt),
+      portfolio,
+      outstanding: Math.round(out)
+    });
+  }
+  return rows;
+}
+
+function syncInspector(val) {
+  const m = parseInt(val);
+  const row = globalRows[m];
+  if (!row) return;
+  document.getElementById('insTimelineLabel').textContent =
+    m === 0 ? 'Start (Month 0)' : `${row.lbl} (Month ${m})`;
+  document.getElementById('insPortfolio').textContent   = fmtF(row.portfolio);
+  document.getElementById('insOutstanding').textContent = fmtF(row.outstanding);
+  document.getElementById('insEmi').textContent         = fmtF(row.emi);
+  document.getElementById('insInterest').textContent    = fmtF(row.cumInt);
+}
+
+function go() {
+  const v = inp();
+  const moRatePct = (v.INT * 100).toFixed(2);
+  const epu = Math.round(((250*(1-v.NPA))/tenure + (250*(1-v.NPA))*v.INT)*100)/100;
+
+  document.getElementById('hUnit').textContent = '₹' + epu.toFixed(2) + '/mo';
+  document.getElementById('hNet').textContent  = (v.annualRate * 100).toFixed(1) + '%';
+  document.getElementById('hNpa').textContent  = (v.NPA*100).toFixed(1) + '%';
+
+  // ── Dynamic simulation logic card ──
+  document.getElementById('lgcTenure').textContent = `Active ÷ ${tenure} month${tenure>1?'s':''}`;
+  document.getElementById('lgcInt').textContent    = `Active × ${moRatePct}%/mo`;
+  document.getElementById('lgcNpa').textContent    = `${(v.NPA*100).toFixed(1)}% tickets lost`;
+  document.getElementById('lgcFreq').textContent   = payFreq === 'daily' ? 'Daily (compounded)' : 'Monthly';
+
+  globalRows = simulate(v.P, v.SIP, TOTAL_MONTHS, v.INT, v.NPA);
+
+  document.getElementById('lblStartP').textContent      = fmtF(v.P);
+  document.getElementById('lblSipCompound').textContent = fmtF(globalRows[TOTAL_MONTHS].portfolio);
+  const maxEmi = Math.max(...globalRows.map(x => x.emi));
+  document.getElementById('lblMaxEmi').textContent = fmtF(maxEmi);
+
+  document.getElementById('sliderEndLabel').textContent = mlbl(TOTAL_MONTHS) + ' (M240)';
+
+  syncInspector(document.getElementById('inspectorSlider').value);
+
+  const tbody = document.getElementById('simTbody');
+  tbody.innerHTML = '';
+  globalRows.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      `<td>${row.m === 0 ? 'Start' : row.lbl + ' (M' + row.m + ')'}</td>
+       <td class="td-emi">${row.m === 0 ? '-' : fmtF(row.emi)}</td>
+       <td class="td-prin">${row.m === 0 ? '-' : fmtF(row.principal)}</td>
+       <td class="td-int">${row.m === 0 ? '-' : '+' + fmtF(row.interest)}</td>
+       <td class="td-npa">-₹${row.npaLoss.toLocaleString('en-IN')}</td>
+       <td class="td-inv">${fmtF(row.reinvested)}</td>
+       <td class="td-buf">${fmtF(row.wallet)}</td>
+       <td class="td-port">${fmtF(row.portfolio)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function sl(inp, lbl, pre='', suf='') {
+  document.getElementById(lbl).textContent =
+    pre + (+document.getElementById(inp).value).toLocaleString('en-IN') + suf;
+}
+function tab(id, btn) {
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('pane-' + id).classList.add('on');
+}
+function setFreq(freq, btn) {
+  payFreq = freq;
+  document.querySelectorAll('.trow .tbtn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  go();
+}
+
+go();
+</script>
+</body>
+</html>
